@@ -15,11 +15,7 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  packages/common:
-    dependencies:
-      reflect-metadata:
-        specifier: ^0.2.0
-        version: 0.2.2
+  packages/common: {}
 
   packages/core:
     dependencies:
@@ -31,9 +27,6 @@ packages:
 
   '@types/node@22.19.21':
     resolution: {integrity: sha512-VMeFBSCKQKmm2swI2kW51SFusDqekC6q9trBCvJ/JliDchFSuoYYKN7yVNjPthP1HKZcx3U1gI/wTcEBjEFKTA==}
-
-  reflect-metadata@0.2.2:
-    resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -48,8 +41,6 @@ snapshots:
   '@types/node@22.19.21':
     dependencies:
       undici-types: 6.21.0
-
-  reflect-metadata@0.2.2: {}
 
   typescript@5.9.3: {}
 

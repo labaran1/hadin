@@ -6,5 +6,6 @@ export const MODULE_METADATA = {
 };
 
 export const GLOBAL_MODULE_METADATA = 'hadin:module:global';
+export const LIFETIME_METADATA = 'hadin:lifetime';
 export const AGENT_WATERMARK = "hadin:agent";
 export const INJECTABLE_WATERMARK = "hadin:injectable";

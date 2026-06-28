@@ -11,3 +11,5 @@ export const AGENT_NAME_METADATA = 'hadin:agent:name';
 export const AGENT_DESCRIPTION_METADATA = 'hadin:agent:description';
 export const AGENT_WATERMARK = 'hadin:agent';
 export const INJECTABLE_WATERMARK = 'hadin:injectable';
+export const TOOL_WATERMARK = 'hadin:tool';
+export const TOOLS_METADATA_KEY = 'hadin:tools';

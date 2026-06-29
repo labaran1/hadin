@@ -1,8 +1,9 @@
+import { Type } from '../type.interface';
 import { Provider } from './provider.interface';
 
 export interface ModuleMetadata {
-  imports?: Function[];
+  imports?: Type[];
   providers?: Provider[];
-  agents?: Function[];
-  exports?: (Function | string | symbol)[];
+  agents?: Type[];
+  exports?: (Type | string | symbol)[];
 }

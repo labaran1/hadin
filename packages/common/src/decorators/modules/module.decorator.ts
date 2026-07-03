@@ -1,4 +1,4 @@
-import { MODULE_METADATA } from '../../constants';
+import { MODULE_METADATA, MODULE_WATERMARK } from '../../constants';
 import { ModuleMetadata } from '../../interfaces/modules/module-metadata.interface';
 import { validateModuleKeys } from '../../utils/validate-module-keys.util';
 
@@ -12,6 +12,7 @@ export function HadinModule(metadata: ModuleMetadata) {
       throw new Error('Decorator metadata is unavailable in this runtime.');
     }
 
+    decoratorMetadata[MODULE_WATERMARK] = true;
     decoratorMetadata[MODULE_METADATA.IMPORTS] = metadata.imports ?? [];
     decoratorMetadata[MODULE_METADATA.PROVIDERS] = metadata.providers ?? [];
     decoratorMetadata[MODULE_METADATA.AGENTS] = metadata.agents ?? [];

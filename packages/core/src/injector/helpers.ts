@@ -1,5 +1,6 @@
 import {
   AGENT_WATERMARK,
+  InjectionToken,
   LIFETIME_METADATA,
   Lifetime,
   type Type,
@@ -20,4 +21,16 @@ export function getLifetime(cls: Type | Function): Lifetime {
 
 export function isAgent(cls: Type | Function): boolean {
   return getMetadata(cls)?.[AGENT_WATERMARK] === true;
+}
+
+export function getTokenName(token: InjectionToken | Type): string {
+  if (typeof token === 'string') {
+    return token;
+  }
+
+  if (typeof token === 'symbol') {
+    return token.description ?? token.toString();
+  }
+
+  return (token as Function).name || 'Anonymous';
 }

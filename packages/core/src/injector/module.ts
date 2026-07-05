@@ -116,7 +116,7 @@ export class Module {
       name: getTokenName(provider.provide),
       metatype: provider.useClass,
       host: this,
-      lifetime: provider.lifetime ?? Lifetime.Singleton,
+      lifetime: provider.lifetime ?? getLifetime(provider.useClass),
     });
     this.providers.set(provider.provide, wrapper);
     return wrapper;

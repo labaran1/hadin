@@ -7,10 +7,12 @@ import {
   type Type,
 } from '@hadin/common';
 import { HadinContainer } from '../injector/container';
-import { getMetadata, getTokenName } from '../injector/helpers';
+import {
+  getMetadata,
+  getTokenName,
+  type MetadataRecord,
+} from '../injector/helpers';
 import { type Module } from '../injector/module';
-
-type MetadataRecord = Record<PropertyKey, unknown>;
 
 export class HadinScanner {
   constructor(private readonly container: HadinContainer) {}

@@ -1,8 +1,8 @@
 import {
   AGENT_WATERMARK,
-  InjectionToken,
   LIFETIME_METADATA,
   Lifetime,
+  type InjectionToken,
   type Type,
 } from '@hadin/common';
 

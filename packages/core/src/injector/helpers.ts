@@ -6,7 +6,7 @@ import {
   type Type,
 } from '@hadin/common';
 
-type MetadataRecord = Record<PropertyKey, unknown>;
+export type MetadataRecord = Record<PropertyKey, unknown>;
 
 export function getMetadata(cls: Type | Function): MetadataRecord | undefined {
   return (cls as any)[Symbol.metadata] as MetadataRecord | undefined;

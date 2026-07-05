@@ -6,7 +6,8 @@ import {
   type Provider,
   type Type,
 } from '@hadin/common';
-import { getLifetime, isAgent } from './helpers';
+import { UnknownExportException } from '../errors';
+import { getLifetime, getTokenName, isAgent } from './helpers';
 import { InstanceWrapper } from './instance-wrapper';
 
 export class Module {
@@ -32,7 +33,7 @@ export class Module {
     if ('useClass' in provider) {
       const wrapper = new InstanceWrapper({
         token: provider.provide,
-        name: this.getTokenName(provider.provide),
+        name: getTokenName(provider.provide),
         metatype: provider.useClass,
         host: this,
         lifetime: provider.lifetime ?? Lifetime.Singleton,
@@ -44,7 +45,7 @@ export class Module {
     if ('useValue' in provider) {
       const wrapper = new InstanceWrapper({
         token: provider.provide,
-        name: this.getTokenName(provider.provide),
+        name: getTokenName(provider.provide),
         metatype: null,
         host: this,
         instance: provider.useValue,
@@ -64,13 +65,13 @@ export class Module {
   addAgent(agent: Type): InstanceWrapper {
     if (!isAgent(agent)) {
       throw new Error(
-        `"${this.getTokenName(agent)}" is not an agent. Did you forget @Agent()?`,
+        `"${getTokenName(agent)}" is not an agent. Did you forget @Agent()?`,
       );
     }
 
     const wrapper = new InstanceWrapper({
       token: agent as unknown as InjectionToken,
-      name: this.getTokenName(agent),
+      name: getTokenName(agent),
       metatype: agent,
       host: this,
       lifetime: getLifetime(agent),
@@ -87,10 +88,26 @@ export class Module {
     return this.providers.get(token);
   }
 
+  addExportedProvider(token: InjectionToken): void {
+    this.validateExportedProvider(token);
+    this.exports.add(token);
+  }
+
+  validateExportedProvider(token: InjectionToken): void {
+    if (this.providers.has(token) || this.hasImportedModule(token)) {
+      return;
+    }
+
+    throw new UnknownExportException(
+      getTokenName(token),
+      getTokenName(this.metatype),
+    );
+  }
+
   private addPlainClassProvider(provider: Function): InstanceWrapper {
     const wrapper = new InstanceWrapper({
       token: provider,
-      name: this.getTokenName(provider),
+      name: getTokenName(provider),
       metatype: provider,
       host: this,
       lifetime: getLifetime(provider),
@@ -102,7 +119,7 @@ export class Module {
   private addFactoryProvider(provider: FactoryProvider): InstanceWrapper {
     const wrapper = new InstanceWrapper({
       token: provider.provide,
-      name: this.getTokenName(provider.provide),
+      name: getTokenName(provider.provide),
       metatype: provider.useFactory,
       host: this,
       lifetime: provider.lifetime ?? Lifetime.Singleton,
@@ -115,7 +132,7 @@ export class Module {
   private addExistingProvider(provider: ExistingProvider): InstanceWrapper {
     const wrapper = new InstanceWrapper({
       token: provider.provide,
-      name: this.getTokenName(provider.provide),
+      name: getTokenName(provider.provide),
       metatype: null,
       host: this,
       inject: [provider.useExisting],
@@ -125,15 +142,10 @@ export class Module {
     return wrapper;
   }
 
-  private getTokenName(token: InjectionToken | Type): string {
-    if (typeof token === 'string') {
-      return token;
-    }
-
-    if (typeof token === 'symbol') {
-      return token.description ?? token.toString();
-    }
-
-    return (token as Function).name || 'Anonymous';
+  private hasImportedModule(token: InjectionToken): boolean {
+    return [...this.imports].some(
+      (importedModule) => importedModule.metatype === token,
+    );
   }
+
 }

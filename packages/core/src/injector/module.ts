@@ -1,12 +1,18 @@
 import {
-  InjectionToken,
   Lifetime,
+  type ClassProvider,
   type ExistingProvider,
   type FactoryProvider,
+  type InjectionToken,
   type Provider,
   type Type,
+  type ValueProvider,
 } from '@hadin/common';
-import { UnknownExportException } from '../errors';
+import {
+  InvalidAgentException,
+  InvalidProviderException,
+  UnknownExportException,
+} from '../errors';
 import { getLifetime, getTokenName, isAgent } from './helpers';
 import { InstanceWrapper } from './instance-wrapper';
 
@@ -30,47 +36,35 @@ export class Module {
       return this.addPlainClassProvider(provider);
     }
 
-    if ('useClass' in provider) {
-      const wrapper = new InstanceWrapper({
-        token: provider.provide,
-        name: getTokenName(provider.provide),
-        metatype: provider.useClass,
-        host: this,
-        lifetime: provider.lifetime ?? Lifetime.Singleton,
-      });
-      this.providers.set(provider.provide, wrapper);
-      return wrapper;
+    if (this.isClassProvider(provider)) {
+      return this.addClassProvider(provider);
     }
 
-    if ('useValue' in provider) {
-      const wrapper = new InstanceWrapper({
-        token: provider.provide,
-        name: getTokenName(provider.provide),
-        metatype: null,
-        host: this,
-        instance: provider.useValue,
-        isResolved: true,
-      });
-      this.providers.set(provider.provide, wrapper);
-      return wrapper;
+    if (this.isValueProvider(provider)) {
+      return this.addValueProvider(provider);
     }
 
-    if ('useFactory' in provider) {
+    if (this.isFactoryProvider(provider)) {
       return this.addFactoryProvider(provider);
     }
 
-    return this.addExistingProvider(provider);
+    if (this.isExistingProvider(provider)) {
+      return this.addExistingProvider(provider);
+    }
+
+    throw new InvalidProviderException(
+      this.getInvalidProviderName(provider),
+      getTokenName(this.metatype),
+    );
   }
 
   addAgent(agent: Type): InstanceWrapper {
     if (!isAgent(agent)) {
-      throw new Error(
-        `"${getTokenName(agent)}" is not an agent. Did you forget @Agent()?`,
-      );
+      throw new InvalidAgentException(getTokenName(agent));
     }
 
     const wrapper = new InstanceWrapper({
-      token: agent as unknown as InjectionToken,
+      token: agent,
       name: getTokenName(agent),
       metatype: agent,
       host: this,
@@ -116,6 +110,31 @@ export class Module {
     return wrapper;
   }
 
+  private addClassProvider(provider: ClassProvider): InstanceWrapper {
+    const wrapper = new InstanceWrapper({
+      token: provider.provide,
+      name: getTokenName(provider.provide),
+      metatype: provider.useClass,
+      host: this,
+      lifetime: provider.lifetime ?? Lifetime.Singleton,
+    });
+    this.providers.set(provider.provide, wrapper);
+    return wrapper;
+  }
+
+  private addValueProvider(provider: ValueProvider): InstanceWrapper {
+    const wrapper = new InstanceWrapper({
+      token: provider.provide,
+      name: getTokenName(provider.provide),
+      metatype: null,
+      host: this,
+      instance: provider.useValue,
+      isResolved: true,
+    });
+    this.providers.set(provider.provide, wrapper);
+    return wrapper;
+  }
+
   private addFactoryProvider(provider: FactoryProvider): InstanceWrapper {
     const wrapper = new InstanceWrapper({
       token: provider.provide,
@@ -148,4 +167,76 @@ export class Module {
     );
   }
 
+  private isClassProvider(provider: unknown): provider is ClassProvider {
+    return (
+      this.hasProviderToken(provider) &&
+      this.hasOwnProperty(provider, 'useClass') &&
+      typeof provider.useClass === 'function'
+    );
+  }
+
+  private isValueProvider(provider: unknown): provider is ValueProvider {
+    return (
+      this.hasProviderToken(provider) &&
+      this.hasOwnProperty(provider, 'useValue')
+    );
+  }
+
+  private isFactoryProvider(provider: unknown): provider is FactoryProvider {
+    return (
+      this.hasProviderToken(provider) &&
+      this.hasOwnProperty(provider, 'useFactory') &&
+      typeof provider.useFactory === 'function'
+    );
+  }
+
+  private isExistingProvider(provider: unknown): provider is ExistingProvider {
+    return (
+      this.hasProviderToken(provider) &&
+      this.hasOwnProperty(provider, 'useExisting') &&
+      this.isInjectionToken(provider.useExisting)
+    );
+  }
+
+  private hasProviderToken(
+    provider: unknown,
+  ): provider is { provide: InjectionToken } {
+    return (
+      typeof provider === 'object' &&
+      provider !== null &&
+      this.hasOwnProperty(provider, 'provide') &&
+      this.isInjectionToken(provider.provide)
+    );
+  }
+
+  private isInjectionToken(value: unknown): value is InjectionToken {
+    return (
+      typeof value === 'string' ||
+      typeof value === 'symbol' ||
+      typeof value === 'function'
+    );
+  }
+
+  private hasOwnProperty<T extends object, K extends PropertyKey>(
+    value: T,
+    property: K,
+  ): value is T & Record<K, unknown> {
+    return Object.prototype.hasOwnProperty.call(value, property);
+  }
+
+  private getInvalidProviderName(provider: unknown): string {
+    if (this.hasProviderToken(provider)) {
+      return getTokenName(provider.provide);
+    }
+
+    if (
+      typeof provider === 'object' &&
+      provider !== null &&
+      this.hasOwnProperty(provider, 'provide')
+    ) {
+      return String((provider as { provide: unknown }).provide);
+    }
+
+    return 'Unknown';
+  }
 }

@@ -6,6 +6,7 @@ import {
   type Provider,
   type Type,
 } from '@hadin/common';
+import { MissingModuleDecoratorException } from '../errors';
 import { HadinContainer } from '../injector/container';
 import {
   getMetadata,
@@ -79,9 +80,9 @@ export class HadinScanner {
         .map((module) => getTokenName(module))
         .join(' -> ');
 
-      throw new Error(
-        `"${getTokenName(moduleClass)}" is missing the @HadinModule() decorator.` +
-          (importHistory.length ? `\nImport path [${path}]` : ''),
+      throw new MissingModuleDecoratorException(
+        getTokenName(moduleClass),
+        importHistory.length ? path : undefined,
       );
     }
 

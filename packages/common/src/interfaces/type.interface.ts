@@ -1,3 +1,3 @@
-export interface Type<T = any> {
+export interface Type<T = any> extends Function {
   new (...args: any[]): T;
 }

@@ -1,34 +1,36 @@
 import {
   GLOBAL_MODULE_METADATA,
+  type InjectionToken,
   MODULE_METADATA,
   MODULE_WATERMARK,
   type Provider,
   type Type,
 } from '@hadin/common';
-
-type MetadataRecord = Record<PropertyKey, unknown>;
-
-export interface ScannedModule {
-  token: Type;
-  imports: Type[];
-  providers: Provider[];
-  agents: Type[];
-  exports: (Type | string | symbol)[];
-  isGlobal: boolean;
-}
+import { MissingModuleDecoratorException } from '../errors';
+import { HadinContainer } from '../injector/container';
+import {
+  getMetadata,
+  getTokenName,
+  type MetadataRecord,
+} from '../injector/helpers';
+import { type Module } from '../injector/module';
 
 export class HadinScanner {
-  private readonly registry = new Map<Type, ScannedModule>();
+  constructor(private readonly container: HadinContainer) {}
 
-  scan(rootModule: Type): Map<Type, ScannedModule> {
-    this.registry.clear();
+  scan(rootModule: Type): HadinContainer {
+    this.container.assertNotLoaded();
     this.scanModule(rootModule, []);
-    return this.registry;
+    this.container.bindGlobalScope();
+    this.container.markAsLoaded();
+    return this.container;
   }
 
-  private scanModule(moduleClass: Type, importHistory: Type[]): void {
-    if (this.registry.has(moduleClass)) {
-      return;
+  private scanModule(moduleClass: Type, importHistory: Type[]): Module {
+    const existingModule = this.container.getModule(moduleClass);
+
+    if (existingModule) {
+      return existingModule;
     }
 
     const metadata = this.readMetadata(moduleClass, importHistory);
@@ -38,48 +40,52 @@ export class HadinScanner {
     const agents = (metadata[MODULE_METADATA.AGENTS] as Type[] | undefined) ?? [];
     const exports =
       (metadata[MODULE_METADATA.EXPORTS] as
-        | (Type | string | symbol)[]
+        | InjectionToken[]
         | undefined) ?? [];
 
-    this.registry.set(moduleClass, {
-      token: moduleClass,
-      imports,
-      providers,
-      agents,
-      exports,
-      isGlobal: metadata[GLOBAL_MODULE_METADATA] === true,
-    });
+    const module = this.container.addModule(
+      moduleClass,
+      metadata[GLOBAL_MODULE_METADATA] === true,
+    );
 
     const childHistory = [...importHistory, moduleClass];
 
     for (const importedModule of imports) {
-      this.scanModule(importedModule, childHistory);
+      module.addImport(this.scanModule(importedModule, childHistory));
     }
+
+    for (const provider of providers) {
+      module.addProvider(provider);
+    }
+
+    for (const agent of agents) {
+      module.addAgent(agent);
+    }
+
+    for (const exportedProvider of exports) {
+      module.addExportedProvider(exportedProvider);
+    }
+
+    return module;
   }
 
   private readMetadata(
     moduleClass: Type,
     importHistory: Type[],
   ): MetadataRecord {
-    const metadata = (moduleClass as any)[Symbol.metadata] as
-      | MetadataRecord
-      | undefined;
+    const metadata = getMetadata(moduleClass);
 
     if (!metadata || metadata[MODULE_WATERMARK] !== true) {
       const path = [...importHistory, moduleClass]
-        .map((module) => this.getModuleName(module))
+        .map((module) => getTokenName(module))
         .join(' -> ');
 
-      throw new Error(
-        `"${this.getModuleName(moduleClass)}" is missing the @HadinModule() decorator.` +
-          (importHistory.length ? `\nImport path [${path}]` : ''),
+      throw new MissingModuleDecoratorException(
+        getTokenName(moduleClass),
+        importHistory.length ? path : undefined,
       );
     }
 
     return metadata;
-  }
-
-  private getModuleName(moduleClass: Type): string {
-    return (moduleClass as Function).name || 'AnonymousModule';
   }
 }

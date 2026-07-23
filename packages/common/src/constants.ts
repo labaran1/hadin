@@ -14,3 +14,5 @@ export const AGENT_WATERMARK = 'hadin:agent';
 export const INJECTABLE_WATERMARK = 'hadin:injectable';
 export const TOOL_WATERMARK = 'hadin:tool';
 export const TOOLS_METADATA_KEY = 'hadin:tools';
+export const SPAWN_WATERMARK = 'hadin:spawn';
+export const SPAWN_METADATA_KEY = 'hadin:spawn:policy';
